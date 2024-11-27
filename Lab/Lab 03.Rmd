@@ -1,0 +1,57 @@
+---
+title: "PSTAT174 LAB03"
+author: "Yanru Fang"
+date: "10/18/2023"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+(a) Express the model in terms of the back shift operator, B.
+
+$(1-0.8B+0.12B^2)X_t = Z_t$
+
+(b) Determine whether the model is causal and/or invertible. (Hint: use polyroot()).\
+The autoregressive models are by nature invertible. The AR polynomial for this process has the
+factorization $\phi(z) = 1-0.8z+0.12z^2$ and $z=5$ or $z=\frac{5}{3}$. Since these zeroes lie outside the unit circle, we conclude that $X_t$ is a causal AR(2).\
+```{r echo=TRUE}
+polyroot(c(1,-0.8,0.12))
+```
+
+(c) We simulate 200 observations from this AR(2) model with the following code:
+```{r echo=TRUE}
+set.seed(1234)
+ar2 <- arima.sim(model = list(ar = c(0.8,-0.12),sd = 1),n = 200)
+```
+```{r echo=TRUE}
+theo_acf <- ARMAacf(ar = c(0.8,-0.12),lag.max = 20, pacf = FALSE)
+op <- par(mfrow = c(1,2))
+plot(theo_acf,type = "h",ylim = c(-1,1),
+main = "Theoretical ACF",
+col = "red",
+ylab = expression(rho[X](h)), xlab = "h")
+abline(h = 0) 
+acf(ar2,lag.max = 20,
+main = "Sample ACF",
+ylim = c(-1,1),
+xlab = "h",
+ylab = expression(hat(rho)[X](h)))
+```
+```{r echo=TRUE}
+theo_pacf <- ARMAacf(ar = c(0.8,-0.12),lag.max = 20, pacf = TRUE)
+op <- par(mfrow = c(1,2))
+plot(theo_pacf,type = "h",ylim = c(-1,1),
+main = "Theoretical PACF",
+col = "red",
+ylab = expression(rho[X](h)), xlab = "h")
+abline(h = 0)
+pacf(ar2,lag.max = 20,
+main = "Sample PACF",
+ylim = c(-1,1),
+xlab = "h",
+ylab = expression(hat(rho)[X](h)))
+```
+(d) Compare ACF and PACF plots in (c).\
+Compared with ACFs, AR models are characterized by PACF=0 after lag k. However, ACFs do not become zeros. In the AR(2) model, theoretical PACFs cut off after lag k=2.

@@ -1,0 +1,108 @@
+---
+title: "PSTAT174 Lab07"
+author: "Yanru Fang"
+date: "11/16/2023"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=TRUE}
+library(tsdl)
+milk <- subset(tsdl, 12, "Agriculture")[[3]]
+train <- milk[1:150]
+test <- milk[151:156]
+ts.plot(train, ylab = "Monthly milk production")
+```
+
+```{r echo=TRUE}
+dmilk <- diff(train, 12)
+ddmilk <- diff(dmilk, 1)
+```
+
+```{r echo=TRUE}
+fit.i <- arima(train, order=c(0,1,0), seasonal = list(order = c(0,1,1)
+, period = 12), method="ML")
+```
+
+(a). Perform diagnostics on the chosen model fit. Do the residuals appear to be white noise? Are they
+normally distributed? You should conduct hypothesis testing and plot some graphs to answer this questions.
+```{r echo=TRUE}
+res = residuals(fit.i)
+par(mfrow=c(2,2))
+hist(res,density=20,breaks=20, col="blue", xlab="", prob=TRUE,
+     main="Histogram of residuals of model milk")
+m <- mean(res)
+std <- sqrt(var(res))
+curve( dnorm(x,m,std), add=TRUE )
+plot.ts(res,ylab= "residuals of model milk",main="Residuals plot of model milk")
+fitt <- lm(res ~ as.numeric(1:length(res)))
+abline(fitt, col="red")
+abline(h=mean(res), col="blue")
+qqnorm(res,main= "Normal Q-Q Plot for Model milk")
+qqline(res,col="blue")
+```
+We can observe that it is not acutally follow a normal distribution from the histogram. It is a liitle bit skewed to right. And, there is no obvious trend or seasonality from the time series plot of the residuals.\
+
+```{r echo=TRUE}
+shapiro.test(res)
+```
+
+```{r echo=TRUE}
+Box.test(res, lag = 10, type = c("Box-Pierce"), fitdf = 3)
+```
+
+```{r echo=TRUE}
+Box.test(res, lag = 10, type = c("Ljung-Box"), fitdf = 3)
+```
+
+```{r echo=TRUE}
+Box.test(res^2, lag = 10, type = c("Ljung-Box"), fitdf = 0)
+```
+
+```{r echo=TRUE}
+ar(res, aic = TRUE, order.max = NULL, method = c("yule-walker"))
+```
+The ar function will recommend order 0 result for the residuals, which means that the residuals are WN.\
+
+```{r echo=TRUE}
+par(mfrow=c(2,1))
+acf(res, lag.max=40,main="")
+title("ACF of the residuals of Model milk")
+pacf(res, lag.max=40,main="")
+title("PACF of the residuals of Model milk")
+```
+
+(b). Forecast the next 6 observations using predict, and plot your predictions. And you should also add true milk production points in test.
+```{r echo=TRUE}
+library(forecast)
+pred.tr <- predict(fit.i, n.ahead = 10)
+U.tr= pred.tr$pred + 2*pred.tr$se
+L.tr= pred.tr$pred - 2*pred.tr$se
+ts.plot(train, xlim=c(1,length(train)+10), ylim = c(min(train),max(U.tr)))
+lines(U.tr, col="blue", lty="dashed")
+lines(L.tr, col="blue", lty="dashed")
+points((length(train)+1):(length(train)+10), pred.tr$pred, col="red")
+```
+The above figure is the forecast on the transformed data. The true values are within the confidence interval of the forecasting. If we want to compare with the true values of the next 6 observations, we need to convert the forecasting values back to the scale before box-cox transformation. \
+
+```{r echo=TRUE}
+pred.orig <- (pred.tr$pred)^(1/0.3)
+U= (U.tr)^(1/0.3)
+L= (L.tr)^(1/0.3)
+par(mfrow=c(2,1))
+ts.plot(as.numeric(train), ylim = c(0,max(U)),col="red",
+ylab="Armed Robberies",main="Visualization of forecasting on testing set")
+lines(U, col="blue", lty="dashed")
+lines(L, col="blue", lty="dashed")
+points((length(train)+1):(length(train)+10), pred.orig, col="black")
+ts.plot(as.numeric(train), xlim = c(109,length(train)+10), ylim = c(200,max
+(U)),col="red",ylab="Armed Robberies",main="Zoomed in visualization of forecasting on
+testing set")
+lines(U, col="blue", lty="dashed")
+lines(L, col="blue", lty="dashed")
+points((length(train)+1):(length(train)+10), pred.orig, col="black")
+```
+

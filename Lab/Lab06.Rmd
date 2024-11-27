@@ -1,0 +1,91 @@
+---
+title: "PSTAT174 Lab06"
+author: "Yanru Fang"
+date: "11/7/2023"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+plot.roots <- function(ar.roots=NULL, ma.roots=NULL, size=2, angles=FALSE, special=NULL, sqecial=NULL,my.pch=1,first.col="blue",second.col="red",main=NULL)
+{xylims <- c(-size,size)
+      omegas <- seq(0,2*pi,pi/500)
+      temp <- exp(complex(real=rep(0,length(omegas)),imag=omegas))
+      plot(Re(temp),Im(temp),typ="l",xlab="x",ylab="y",xlim=xylims,ylim=xylims,main=main)
+      abline(v=0,lty="dotted")
+      abline(h=0,lty="dotted")
+      if(!is.null(ar.roots))
+        {
+          points(Re(1/ar.roots),Im(1/ar.roots),col=first.col,pch=my.pch)
+          points(Re(ar.roots),Im(ar.roots),col=second.col,pch=my.pch)
+        }
+      if(!is.null(ma.roots))
+        {
+          points(Re(1/ma.roots),Im(1/ma.roots),pch="*",cex=1.5,col=first.col)
+          points(Re(ma.roots),Im(ma.roots),pch="*",cex=1.5,col=second.col)
+        }
+      if(angles)
+        {
+          if(!is.null(ar.roots))
+            {
+              abline(a=0,b=Im(ar.roots[1])/Re(ar.roots[1]),lty="dotted")
+              abline(a=0,b=Im(ar.roots[2])/Re(ar.roots[2]),lty="dotted")
+            }
+          if(!is.null(ma.roots))
+            {
+              sapply(1:length(ma.roots), function(j) abline(a=0,b=Im(ma.roots[j])/Re(ma.roots[j]),lty="dotted"))
+            }
+        }
+      if(!is.null(special))
+        {
+          lines(Re(special),Im(special),lwd=2)
+        }
+      if(!is.null(sqecial))
+        {
+          lines(Re(sqecial),Im(sqecial),lwd=2)
+        }
+        }
+```
+
+
+```{r echo=TRUE}
+library(tsdl)
+milk <- subset(tsdl, 12, "Agriculture")[[3]]
+milk
+```
+
+(a). Split the dataset into training set train and testing set test. The testing set is the last 6 months of the data and training set is the rest of the first 150 months of the data.
+```{r echo=TRUE}
+train_data = milk[c(1: 150)]
+train_data
+test_data = milk[c(151:156)]
+test_data
+```
+
+(b). From previous lab assignment, we determine possible candidate models SARIMA(p, d, q)(P, D, Q)s for the series $Y_t$. Fit the training data to the chosen model.
+```{r echo=TRUE}
+fit1 = arima(train_data, order=c(1,1,1), seasonal = list(order = c(1,1,1), period = 12)
+, method="ML")
+fit1
+```
+
+(c). For the model you selected, do we need to set any coefficient to zero and why?\
+Yes. Since the 2 times standard errors are larger than Estimated Coeffcients of ar1, ma1 and sar1. So it means that 0 is within the confidence interval of the coefficients. We set the coefficients of ar1, ma1, sar1 to be 0.\
+```{r echo=TRUE}
+fit2 = arima(train_data, order=c(1,1,1), seasonal = list(order = c(1,1,1)
+, period = 12) ,fixed = c(0, 0, 0, NA), method="ML")
+fit2
+```
+
+(d). For the model you selected, check the model stationarity and invertibility.\
+The model should be 
+$$
+(1-B)(1-B)^{12}X_t=(1-0.6989B)Z_t
+$$
+We want to check the model stationarity and invertibility. There is no AR and MA part in this model. So, we need to check the SMA part.\
+```{r echo=TRUE}
+polyroot(c(1, -0.6989))
+plot.roots(NULL, polyroot(c(1, -0.6989)), main = 'roots of SAR part of model')
+
+```
+From the roots plot, the roots are lie outside the unit circle. Therefore, the model is stationary and invertible.\

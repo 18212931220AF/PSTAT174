@@ -1,0 +1,94 @@
+---
+title: "PSTAT174 Lab04"
+author: "Yanru Fang"
+date: "10/26/2023"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tsdl)
+meta_tsdl$description[[1]]
+iowa.ts <- tsdl[[1]]
+```
+
+(a). Plot the time series. What do you notice? Does the variance change over time? Is their a trend and/or
+seasonal components?
+```{r echo=TRUE}
+ts.plot(iowa.ts)
+```
+From the plot we can see that there is an increasing trend in this data. Also, the variability of the data changes according to time.\
+
+(b). Apply a Box-Cox transformation to the time series, find the optimal, transform the data, and re-plot the transformed time series vs. original time series.
+```{r echo=TRUE}
+library(MASS)
+t = 1:length(iowa.ts)
+fit = lm(iowa.ts ~ t)
+bcTransform = boxcox(iowa.ts ~ t,plotit = TRUE)
+```
+
+```{r echo=TRUE}
+lambda = bcTransform$x[which(bcTransform$y == max(bcTransform$y))]
+iowa.bc = (1/lambda)*(iowa.ts^lambda-1)
+lambda
+```
+
+```{r echo=TRUE}
+op <- par(mfrow = c(1,2))
+ts.plot(iowa.ts,main = "Original data",ylab = expression(X[t]))
+ts.plot(iowa.bc,main = "Box-Cox tranformed data", ylab = expression(Y[t]))
+```
+
+(c). Calculate the sample variance and examine the sample ACF of the transformed data (set max.lag = 48 or 60). What do you notice? Access if there is trend in the data. If yes, remove trend components by using the diff() at lag=1. Plot the differenced time series. Does it look stationary? Re-calculate the sample variance.
+```{r echo=TRUE}
+var(iowa.ts)
+var(iowa.bc)
+op = par(mfrow = c(1,2))
+acf(iowa.bc,lag.max = 60,main = "")
+pacf(iowa.bc,lag.max = 60,main = "")
+title("Box-Cox Transformed Time Series", line = -1, outer=TRUE)
+par(op)
+```
+
+```{r echo=TRUE}
+y1 = diff(iowa.bc, 1)
+plot(y1, main = "De-trended/seasonalized Time Series",
+     ylab = expression(nabla^{12}~Y[t]))
+abline(h = 0,lty = 2)
+```
+
+```{r echo=TRUE}
+var(iowa.bc)
+var(y1)
+```
+
+(d). If there is seasonality, determine the seasonal period and remove seasonal components by differencing the time series data from (c) using the diff() function. Re-calculate the sample variance.
+```{r echo=TRUE}
+y12 = diff(y1, 12)
+ts.plot(y12, main = "De-trended/seasonalized Time Series", 
+        ylab = expression(nabla^{12}~nabla~Y[t]))
+abline(h = 0,lty = 2)
+```
+
+```{r}
+var(iowa.bc)
+var(y12)
+```
+
+(e). For the stationary data you get, examine the sample ACF and sample PACF and pick significant lags for sample ACF and sample PACF.
+```{r echo=TRUE}
+op = par(mfrow = c(1,2))
+acf(y1,lag.max = 60,main = "")
+pacf(y1,lag.max = 60,main = "")
+title("De-seasonalized Time Series", line = -1, outer=TRUE)
+```
+
+```{r echo=TRUE}
+op = par(mfrow = c(1,2))
+acf(y12,lag.max = 60,main = "")
+pacf(y12,lag.max = 60,main = "")
+title("De-seasonalized Time Series", line = -1, outer=TRUE)
+```
