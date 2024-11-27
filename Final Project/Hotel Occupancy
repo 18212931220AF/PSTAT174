@@ -1,1 +1,3 @@
-
+This project is used R language to investigates the aggregate number of room nights occupied in hotels, motels, and guesthouses across Victoria, Australia, from January 1980 to June 1995. 
+I used SARIMA modeling technique to select the most appropriate model for predicting overnight occupancy, which revealed a clear upward linear trend and seasonal pattern in the data.
+Finally, I completed a comprehensive report.
